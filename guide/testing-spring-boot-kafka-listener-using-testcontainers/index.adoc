@@ -1,0 +1,182 @@
+---
+title: "Testing Spring Boot Kafka Listener using Testcontainers"
+date: 2023-04-06T09:39:58+05:30
+draft: false
+description: This guide will explain how to test Spring Boot Kafka Listeners using Testcontainers.
+repo: https://github.com/testcontainers/tc-guide-testing-spring-boot-kafka-listener
+languages:
+  - Java
+tags:
+  - spring-boot
+  - mysql
+  - kafka
+---
+:toc:
+:toclevels: 2
+:codebase: https://raw.githubusercontent.com/testcontainers/tc-guide-testing-spring-boot-kafka-listener/main
+
+In this guide you will learn how to
+
+* Create a Spring Boot application with Kafka integration
+* Implement a Kafka Listener and persist data in MySQL database
+* Test the Kafka Listener using Testcontainers and Awaitility
+
+
+== Prerequisites
+* Java 17+
+* Your favorite IDE (Intellij IDEA, Eclipse, NetBeans, VS Code)
+* A Docker environment supported by Testcontainers https://www.testcontainers.org/supported_docker_environment/
+
+== What we are going to achieve in this guide
+We are going to create a Spring Boot project with *Kafka*, *Spring Data JPA* and *MySQL*,
+where we implement a Kafka Listeners which receives an event payload and persists the event data in the database.
+Then we will test this Kafka Listener using the Testcontainers Kafka
+and MySQL modules in conjunction with http://www.awaitility.org/[Awaitility].
+
+== Getting Started
+You can create a new Spring Boot project from https://start.spring.io[Spring Initializr] by selecting the
+*Spring for Apache Kafka*, *Spring Data JPA*, *MySQL Driver* and *Testcontainers* starters.
+
+Once the application is generated add the Awaitility library as test dependency
+which we can use for asserting the expectations of an asynchronous process flow.
+
+If you have selected Gradle as the build tool, then the generated build.gradle file should have the following dependencies.
+
+[source,groovy,indent=0]
+----
+include::{codebase}/build.gradle[lines="25..37"]
+----
+
+We are going to implement a Kafka Listener listening to a topic named product-price-changes
+and upon receiving a message we are going to extract product code and price from the event payload
+and update the price of that product in the MySQL database.
+
+== Create JPA entity
+First let us start with creating a JPA entity *Product.java*.
+
+[source,java]
+----
+include::{codebase}/src/main/java/com/testcontainers/demo/Product.java[]
+----
+
+== Create Spring Data JPA repository
+Let us create a Spring Data JPA repository interface for the *Product* entity and
+add methods to find a product for a given code and update the price for the given product code as follows:
+
+[source,java]
+----
+include::{codebase}/src/main/java/com/testcontainers/demo/ProductRepository.java[]
+----
+
+== Add a schema creation script
+As we are not using any in-memory database, we need to create the MySQL database tables by some means.
+The recommended approach is to use some database migration tool like Flyway or Liquibase,
+but for this guide we will use simple schema initialization support provided by Spring Boot.
+
+Create a *schema.sql* file with the following content under the *src/main/resources* directory.
+
+[source,sql]
+----
+include::{codebase}/src/main/resources/schema.sql[]
+----
+
+We also need to enable schema initialization by adding the following property in
+the *src/main/resources/application.properties* file.
+
+[source,properties]
+----
+spring.sql.init.mode=always
+----
+
+== Create the event payload java bean
+Let us create a domain object named ProductPriceChangedEvent as a record representing the structure of the event payload
+that we are going to receive from the Kafka topic.
+
+[source,java]
+----
+include::{codebase}/src/main/java/com/testcontainers/demo/ProductPriceChangedEvent.java[]
+----
+
+== Implement Kafka Listener
+Finally, let us implement the Kafka listener which handles the messages received from the *product-price-changes* topic
+and updates the product price in the database.
+
+[source,java]
+----
+include::{codebase}/src/main/java/com/testcontainers/demo/ProductPriceChangedEventHandler.java[]
+----
+
+We have implemented a Kafka event listener using a *@KafkaListener* annotated method specifying the topic name to listen to.
+
+Let us assume that there is an agreement between the sender and receiver that the payload will be sent in the following JSON format:
+
+[source,json]
+----
+{
+  "productCode": "P100",
+  "price": 25.00
+}
+----
+
+To let the Spring Kafka integration handle the serialization and deserialization of key and values,
+configure the following properties in *src/main/resources/application.properties* file.
+
+[source,properties]
+----
+include::{codebase}/src/main/resources/application.properties[lines="3..11"]
+----
+
+We are going to use productCode as key which will be (de)serialized using *StringSerializer*/*StringDeserializer*
+and *ProductPriceChangedEvent* as value which will be (de)serialized using *JsonSerializer*/*JsonDeserializer*.
+
+== Write Test for Kafka Listener
+We are going to write a test for the Kafka event listener *ProductPriceChangedEventHandler*
+by sending a message to the product-price-changes topic and verify the updated product price in the database.
+
+But in order to successfully start our Spring context we need Kafka and the MySQL database up and running
+and configure the Spring context to talk to them.
+
+We will use the Testcontainers library to spin up a Kafka and the MySQL database instances as Docker containers
+and configure the application to talk to them as follows:
+
+[source,java]
+----
+include::{codebase}/src/test/java/com/testcontainers/demo/ProductPriceChangedEventHandlerTest.java[]
+----
+
+Let us understand what is going on in this test.
+
+* We have annotated the test class with the *@SpringBootTest* annotation to write an integration test which loads the complete Spring application context.
+* We have configured the Testcontainers special JDBC URL to spin up a MySQL container and configure it as a DataSource with Spring Boot application context.
+* We have used the Testcontainers JUnit 5 Extension annotations *@Testcontainers* and *@Container* to spin up a Kafka container and registered the *bootstrap-servers* location using *DynamicPropertySource* mechanism.
+* We have created a Product record in the database before running the test using the *@BeforeEach* callback method.
+* During the test, we sent a message to the *product-price-changes* topic using *KafkaTemplate* with productCode as key and *ProductPriceChangedEvent* instance as value. Spring Boot will take care of converting the object into JSON using *JsonSerializer*.
+* As Kafka message processing is an asynchronous process, we are using the *Awaitility* library to check whether the product price is updated in the database to the expected value or not with an interval of 3 seconds waiting up to a maximum of 10 seconds. If the message is consumed and processed within 10 seconds the test will pass, otherwise the test will fail.
+* Also, notice that we have configured the property *spring.kafka.consumer.auto-offset-reset* to *earliest* so that the listener will consume the messages even if the message is sent to the topic before the listener is ready. This setting is helpful for running tests.
+
+== Run tests
+
+[source,shell]
+----
+# If you are using Maven
+./mvnw test
+
+# If you are using Gradle
+./gradlew test
+----
+
+You should see the Kafka and MySQL Docker containers are started and all tests should PASS.
+You can also notice that after the tests are executed the containers are stopped and removed automatically.
+
+== Summary
+We have learned how to test Kafka message listeners using a real Kafka instance with Testcontainers
+and verified the expected result using Awaitility. If we are using Kafka and MySQL in production,
+it is often the best approach to test with real Kafka and MySQL instances in order to allow our test suite to provide us
+with more confidence about the correctness of our code.
+
+To learn more about Testcontainers visit http://testcontainers.com
+
+== Further Reading
+* https://testcontainers.com/guides/testing-spring-boot-rest-api-using-testcontainers/[Getting started with Testcontainers in a Java Spring Boot Project]
+* https://testcontainers.com/guides/replace-h2-with-real-database-for-testing/[The simplest way to replace H2 with a real database for testing]
+* http://www.awaitility.org/[Awaitility]
