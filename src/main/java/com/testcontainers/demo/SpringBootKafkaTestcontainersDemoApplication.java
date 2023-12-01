@@ -7,6 +7,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class SpringBootKafkaTestcontainersDemoApplication {
 
   public static void main(String[] args) {
-    SpringApplication.run(SpringBootKafkaTestcontainersDemoApplication.class, args);
+    SpringApplication.run(
+      SpringBootKafkaTestcontainersDemoApplication.class,
+      args
+    );
   }
 }

@@ -65,10 +65,13 @@ class ProductPriceChangedEventHandlerTest {
       .pollInterval(Duration.ofSeconds(3))
       .atMost(10, SECONDS)
       .untilAsserted(() -> {
-        Optional<Product> optionalProduct = productRepository.findByCode("P100");
+        Optional<Product> optionalProduct = productRepository.findByCode(
+          "P100"
+        );
         assertThat(optionalProduct).isPresent();
         assertThat(optionalProduct.get().getCode()).isEqualTo("P100");
-        assertThat(optionalProduct.get().getPrice()).isEqualTo(new BigDecimal("14.50"));
+        assertThat(optionalProduct.get().getPrice())
+          .isEqualTo(new BigDecimal("14.50"));
       });
   }
 }
