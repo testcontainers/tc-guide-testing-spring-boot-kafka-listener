@@ -32,7 +32,7 @@ class ProductPriceChangedEventHandlerTest {
 
   @Container
   static final KafkaContainer kafka = new KafkaContainer(
-    DockerImageName.parse("confluentinc/cp-kafka:7.3.3")
+    DockerImageName.parse("confluentinc/cp-kafka:7.6.1")
   );
 
   @DynamicPropertySource

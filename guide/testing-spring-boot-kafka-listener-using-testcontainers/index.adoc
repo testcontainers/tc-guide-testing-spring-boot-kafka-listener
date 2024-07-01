@@ -44,7 +44,7 @@ If you have selected Gradle as the build tool, then the generated build.gradle f
 
 [source,groovy,indent=0]
 ----
-include::{codebase}/build.gradle[lines="26..38"]
+include::{codebase}/build.gradle[lines="25..37"]
 ----
 
 We are going to implement a Kafka Listener listening to a topic named product-price-changes
