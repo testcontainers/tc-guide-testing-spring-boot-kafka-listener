@@ -3,6 +3,7 @@
 This is sample code for [Testing Spring Boot Kafka Listener using Testcontainers](https://testcontainers.com/guides/testing-spring-boot-kafka-listener-using-testcontainers) guide.
 
 ## 1. Setup Environment
+
 Make sure you have Java 8+ and a [compatible Docker environment](https://www.testcontainers.org/supported_docker_environment/) installed.
 If you are going to use Maven build tool then make sure Java 17+ is installed.
 
@@ -10,16 +11,20 @@ For example:
 
 ```shell
 $ java -version
-openjdk version "17.0.4" 2022-07-19
-OpenJDK Runtime Environment Temurin-17.0.4+8 (build 17.0.4+8)
-OpenJDK 64-Bit Server VM Temurin-17.0.4+8 (build 17.0.4+8, mixed mode, sharing)
+openjdk 17.0.15 2025-04-15 LTS
+OpenJDK Runtime Environment (build 17.0.15+10-LTS)
+OpenJDK 64-Bit Server VM (build 17.0.15+10-LTS, mixed mode, sharing)
 $ docker version
 ...
-Server: Docker Desktop 4.12.0 (85629)
+Server: Docker Desktop 4.0.0 ()
  Engine:
-  Version:          20.10.17
-  API version:      1.41 (minimum version 1.12)
-  Go version:       go1.17.11
+  Version:          28.2.2
+  API version:      1.50 (minimum version 1.24)
+  Go version:       go1.24.3
+  Git commit:       45873be
+  Built:            Fri May 30 12:07:26 2025
+  OS/Arch:          linux/amd64
+  Experimental:     false
 ...
 ```
 
