@@ -1,8 +1,8 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.5.1'
+    id 'org.springframework.boot' version '4.1.0'
     id 'io.spring.dependency-management' version '1.1.7'
-    id 'com.diffplug.spotless' version "7.0.4"
+    id 'com.diffplug.spotless' version "8.10.0"
 }
 
 group = 'com.testcontainers'
@@ -19,20 +19,19 @@ repositories {
 }
 
 ext {
-    set('testcontainers.version', "1.21.1")
+    set('testcontainers.version', "2.0.5")
 }
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.kafka:spring-kafka'
+    implementation 'org.springframework.boot:spring-boot-starter-kafka'
     runtimeOnly 'com.mysql:mysql-connector-j'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.testcontainers:junit-jupiter'
     testImplementation 'org.springframework.kafka:spring-kafka-test'
-    testImplementation 'org.testcontainers:junit-jupiter'
-    testImplementation 'org.testcontainers:kafka'
-    testImplementation 'org.testcontainers:mysql'
+    testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
+    testImplementation 'org.testcontainers:testcontainers-kafka'
+    testImplementation 'org.testcontainers:testcontainers-mysql'
     testImplementation 'org.awaitility:awaitility'
 }
 
@@ -48,7 +47,7 @@ spotless {
     java {
         importOrder()
         removeUnusedImports()
-        prettier(['prettier': '3.5.3', 'prettier-plugin-java': '2.6.8'])
+        prettier(['prettier': '3.9.6', 'prettier-plugin-java': '2.10.3'])
             .config([
                 'parser': 'java',
                 'tabWidth': 2,
